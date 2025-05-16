@@ -20,8 +20,9 @@
 "-"    {return SUBSTRACTION;}
 "*"    {return MULTIPLICATION;}
 "/"    {return DIVIDE;}
+"//"    {return ROOT}
 "%"    {return MOD;}
-"^"    {return EXPONENT;}
+"**"    {return EXPONENT;}
 "<"    {return LESS;}
 ">"    {return MORE;}
 "<="    {return LESS_EQUAL;}
@@ -30,6 +31,34 @@
 "=/="    {return DIFFERENT;}
 "~"      {return NOT;}   
 "=:"              { return ASSIGN; }
+
+","     { return COMMA; }
+
+"print"   { return PRINT; }
+"input"   { return INPUT; }
+
+"true"     { yylval.ival = 1; return BOOL; }
+"false"    { yylval.ival = 0; return BOOL; }
+
+"and"   { return AND; }
+"or"    { return OR; }
+
+"abs"   { return ABS; }
+"log"   { return LOG; }
+
+"sin"   { return SIN; }
+"cos"   {return COS}
+"tan"   {return TAN}
+"cot"   {return COT}
+
+\"[^\"]*\"   { yylval.sval = strdup(yytext); return STRING; /**/}
+
+
+"function"   { return FUNCTION; }
+"endfunc"    { return ENDFUNCTION; }
+"return"     { return RETURN; }
+
+
 [0-9]+            { yylval.ival = atoi(yytext); return NUMBER; }
 [a-zA-Z_][a-zA-Z0-9_]*   { yylval.sval = strdup(yytext); return IDENTIFIER; }
 .                 { return *yytext; } //Tanımlanmamış her karakter varsa onu ASCII değeriyle döner.
