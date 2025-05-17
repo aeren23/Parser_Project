@@ -9,7 +9,7 @@
 
 "--".*            {/* yorum satırları */}
 [ \t]             {/* boşlukları geç */}
-\n                { return NEWLINE; }
+\n                { /*Şimdilik geç*/}
 "if"            { return IF; }
 "then"             { return THEN; }
 "else"            { return ELSE; }
@@ -20,7 +20,7 @@
 "-"    {return SUBSTRACTION;}
 "*"    {return MULTIPLICATION;}
 "/"    {return DIVIDE;}
-"//"    {return ROOT}
+"//"    {return ROOT;}
 "%"    {return MOD;}
 "**"    {return EXPONENT;}
 "<"    {return LESS;}
@@ -47,9 +47,9 @@
 "log"   { return LOG; }
 
 "sin"   { return SIN; }
-"cos"   {return COS}
-"tan"   {return TAN}
-"cot"   {return COT}
+"cos"   {return COS;}
+"tan"   {return TAN;}
+"cot"   {return COT;}
 
 \"[^\"]*\"   { yylval.sval = strdup(yytext); return STRING; /**/}
 
