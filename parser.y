@@ -73,6 +73,8 @@ command:
     | if_statement
     | loop_statement
     | print_statement
+    | function_definition
+    | function_call
 ;
 
 assignment:
@@ -90,7 +92,6 @@ expression:
     | BOOL                                { $$ = $1; }
     | IDENTIFIER                          { $$ = getVariable($1); }
     | LPAREN expression RPAREN            { $$ = $2; }
-    | STRING { printf("%s\n", $1); $$ = 0; }
 
 ;
 
