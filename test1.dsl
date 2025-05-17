@@ -9,12 +9,11 @@ if x < y then [
 
 loop x < 10 [
   print x
-
   x =: x + 1
 ]
 
-function topla a, b [
-  print a + b
-] endfunc
+function topla(a, b) {
+  print a - b
+} endfunc
 
-topla (3, 5)
+topla(3,5)

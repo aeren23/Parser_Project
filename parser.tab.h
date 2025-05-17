@@ -95,7 +95,8 @@ extern int yydebug;
     NUMBER = 296,                  /* NUMBER  */
     BOOL = 297,                    /* BOOL  */
     IDENTIFIER = 298,              /* IDENTIFIER  */
-    STRING = 299                   /* STRING  */
+    STRING = 299,                  /* STRING  */
+    BODY = 300                     /* BODY  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -104,12 +105,12 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 44 "parser.y"
+#line 70 "parser.y"
 
   int ival;
   char* sval;
 
-#line 113 "parser.tab.h"
+#line 114 "parser.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

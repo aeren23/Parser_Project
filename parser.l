@@ -1,5 +1,6 @@
 %{
 #include "parser.tab.h"
+#include <string.h>
 %}
 %option noyywrap 
 %option yylineno 
@@ -14,6 +15,13 @@
 "then"             { return THEN; }
 "else"            { return ELSE; }
 "loop"           { return LOOP; }
+
+"{"([^}]|\n)*"}"  {
+    /* yytext = "{ … }" */
+    yylval.sval = strndup(yytext+1, yyleng-2);
+    return BODY;
+}
+
 "["            { return START; }
 "]"            { return END; }
 "+"    {return SUM;}
@@ -56,12 +64,18 @@
 
 "function"   { return FUNCTION; }
 "endfunc"    { return ENDFUNCTION; }
+
+
+
 "return"     { return RETURN; }
 
 
 
 "("    { return LPAREN; }
 ")"    { return RPAREN; }
+
+
+
 
 
 [0-9]+            { yylval.ival = atoi(yytext); return NUMBER; }
