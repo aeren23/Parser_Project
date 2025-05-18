@@ -4,8 +4,13 @@
 #include <string.h>
 #include <math.h>
 
+// Flex fonksiyonları
+extern int yylex();
+extern int yyparse();
+typedef struct yy_buffer_state *YY_BUFFER_STATE;
+extern YY_BUFFER_STATE yy_scan_string(const char *str);
+extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
 
-//Fonksiyon prototipleri
 typedef struct {
     char* name;
     char* params[10];
@@ -21,13 +26,11 @@ int paramDefCount = 0;
 
 int args[10];
 int argCount = 0;
-//Fonksiyon prototipleri sonu
 
 void yyerror(const char *s);
 int yylex(void);
 extern int yylineno;
 
-/* Değişken tablosu */
 typedef struct {
     char* name;
     int value;
@@ -36,7 +39,12 @@ typedef struct {
 Variable vars[100];
 int varCount = 0;
 
-/* Değişken set etme fonksiyonu */
+void executeBlock(const char* block) {
+    YY_BUFFER_STATE buf = yy_scan_string(block);
+    yyparse();
+    yy_delete_buffer(buf);
+}
+
 void setVariable(char* name, int value) {
     for (int i = 0; i < varCount; i++) {
         if (strcmp(vars[i].name, name) == 0) {
@@ -49,7 +57,6 @@ void setVariable(char* name, int value) {
     varCount++;
 }
 
-/* Değişken okuma fonksiyonu */
 int getVariable(char* name) {
     for (int i = 0; i < varCount; i++) {
         if (strcmp(vars[i].name, name) == 0) {
@@ -59,12 +66,6 @@ int getVariable(char* name) {
     printf("HATA: '%s' değişkeni tanımlı değil!\n", name);
     exit(1);
 }
-
-
-// Flex buffer fonksiyon prototipleri:
-typedef void* YY_BUFFER_STATE;
-extern YY_BUFFER_STATE yy_scan_string(const char *str);
-extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
 %}
 
 %union {
@@ -87,12 +88,8 @@ extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
 
 %token <sval> BODY
 
-
-
 %type <ival> expression condition
 %type program command function_definition print_statement assignment
-
-
 
 %%
 
@@ -106,6 +103,7 @@ command:
     | if_statement
     | loop_statement
     | print_statement
+    | input_statement
     | function_definition
     | function_call
 ;
@@ -128,12 +126,22 @@ expression:
     | expression EXPONENT expression { $$ = pow($1, $3); }
     | expression MOD expression { $$ = $1 % $3; }
     | expression ROOT expression { $$ = sqrt($3); }
-
 ;
 
 if_statement:
-    IF condition THEN START program END
-  | IF condition THEN START program END ELSE START program END
+    IF condition THEN BODY {
+        if ($2) executeBlock($4);
+    }
+  | IF condition THEN BODY ELSE BODY {
+        if ($2) executeBlock($4);
+        else executeBlock($6);
+    }
+;
+
+loop_statement:
+    LOOP condition BODY {
+        while ($2) executeBlock($3);
+    }
 ;
 
 condition:
@@ -145,10 +153,6 @@ condition:
     | expression DIFFERENT expression     { $$ = $1 != $3; }
 ;
 
-loop_statement:
-    LOOP condition START program END
-;
-
 print_statement:
     PRINT expression {
         printf("%d\n", $2);
@@ -157,7 +161,6 @@ print_statement:
         printf("%s\n", $2);
     }
 ;
-
 
 input_statement:
     INPUT IDENTIFIER {
@@ -181,24 +184,17 @@ function_definition:
     }
 ;
 
-
-
 function_call:
     IDENTIFIER LPAREN param_list RPAREN {
         int found = 0;
         for (int i = 0; i < funcCount; i++) {
             if (strcmp(funcs[i].name, $1) == 0) {
                 found = 1;
-                // Parametreleri doğru atamak için:
-                for (int j = 0; j < funcs[i].paramCount; j++) {
+                for (int j = 0; j < funcs[i].paramCount; j++)
                     setVariable(funcs[i].params[j], args[j]);
-                }
-                // Fonksiyon gövdesini string olarak parse et
-                {
-                    YY_BUFFER_STATE buf = yy_scan_string(funcs[i].body);
-                    yyparse();
-                    yy_delete_buffer(buf);
-                }
+                YY_BUFFER_STATE buf = yy_scan_string(funcs[i].body);
+                yyparse();
+                yy_delete_buffer(buf);
                 break;
             }
         }
@@ -208,7 +204,6 @@ function_call:
         argCount = 0;
     }
 ;
-
 
 param_def_list:
       IDENTIFIER  {
@@ -231,8 +226,6 @@ param_list:
           argCount++;
       }
 ;
-
-
 
 %%
 

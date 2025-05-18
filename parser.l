@@ -22,8 +22,7 @@
     return BODY;
 }
 
-"["            { return START; }
-"]"            { return END; }
+
 "+"    {return SUM;}
 "-"    {return SUBSTRACTION;}
 "*"    {return MULTIPLICATION;}
