@@ -1,3 +1,4 @@
+
 %{
 #include <stdio.h>
 #include <stdlib.h>
@@ -100,6 +101,7 @@ extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
 %type <ival> expression condition
 %type program command function_definition print_statement assignment
 
+%type <ival> relation_op
 
 %start program
 
@@ -218,14 +220,37 @@ condition:
     }
 ;
 
+relation_op:
+      LESS        { $$ = 1; }
+    | MORE        { $$ = 2; }
+    | LESS_EQUAL  { $$ = 3; }
+    | MORE_EQUAL  { $$ = 4; }
+    | EQUALS      { $$ = 5; }
+    | DIFFERENT   { $$ = 6; }
+;
+
 loop_statement:
-    LOOP condition BODY
+    LOOP LPAREN IDENTIFIER relation_op NUMBER RPAREN BODY
     {
-      while ($2) {
-        YY_BUFFER_STATE b = yy_scan_string($3);
-        yyparse();
-        yy_delete_buffer(b);
-      }
+        int _var, _cond_val;
+        do {
+            _var = getVariable($3);
+            _cond_val = 0;
+            // Koşulu kontrol et
+            switch ($4) {
+                case 1: _cond_val = (_var < $5); break;
+                case 2: _cond_val = (_var > $5); break;
+                case 3: _cond_val = (_var <= $5); break;
+                case 4: _cond_val = (_var >= $5); break;
+                case 5: _cond_val = (_var == $5); break;
+                case 6: _cond_val = (_var != $5); break;
+            }
+            if (!_cond_val) return 0;
+
+            YY_BUFFER_STATE b = yy_scan_string($7);
+            yyparse();
+            yy_delete_buffer(b);
+        } while (1);
     }
 ;
 
