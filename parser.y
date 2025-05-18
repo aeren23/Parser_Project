@@ -4,13 +4,8 @@
 #include <string.h>
 #include <math.h>
 
-// Flex fonksiyonları
-extern int yylex();
-extern int yyparse();
-typedef struct yy_buffer_state *YY_BUFFER_STATE;
-extern YY_BUFFER_STATE yy_scan_string(const char *str);
-extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
 
+//Fonksiyon prototipleri
 typedef struct {
     char* name;
     char* params[10];
@@ -26,11 +21,13 @@ int paramDefCount = 0;
 
 int args[10];
 int argCount = 0;
+//Fonksiyon prototipleri sonu
 
 void yyerror(const char *s);
 int yylex(void);
 extern int yylineno;
 
+/* Değişken tablosu */
 typedef struct {
     char* name;
     int value;
@@ -39,12 +36,7 @@ typedef struct {
 Variable vars[100];
 int varCount = 0;
 
-void executeBlock(const char* block) {
-    YY_BUFFER_STATE buf = yy_scan_string(block);
-    yyparse();
-    yy_delete_buffer(buf);
-}
-
+/* Değişken set etme fonksiyonu */
 void setVariable(char* name, int value) {
     for (int i = 0; i < varCount; i++) {
         if (strcmp(vars[i].name, name) == 0) {
@@ -57,6 +49,7 @@ void setVariable(char* name, int value) {
     varCount++;
 }
 
+/* Değişken okuma fonksiyonu */
 int getVariable(char* name) {
     for (int i = 0; i < varCount; i++) {
         if (strcmp(vars[i].name, name) == 0) {
@@ -66,6 +59,12 @@ int getVariable(char* name) {
     printf("HATA: '%s' değişkeni tanımlı değil!\n", name);
     exit(1);
 }
+
+
+// Flex buffer fonksiyon prototipleri:
+typedef void* YY_BUFFER_STATE;
+extern YY_BUFFER_STATE yy_scan_string(const char *str);
+extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
 %}
 
 %union {
@@ -73,7 +72,7 @@ int getVariable(char* name) {
   char* sval;
 }
 
-%token IF THEN ELSE LOOP START END
+%token IF THEN ELSE LOOP 
 %token SUM SUBSTRACTION MULTIPLICATION DIVIDE ROOT MOD EXPONENT
 %token LESS MORE LESS_EQUAL MORE_EQUAL EQUALS DIFFERENT NOT
 %token ASSIGN
@@ -83,15 +82,53 @@ int getVariable(char* name) {
 %token FUNCTION ENDFUNCTION RETURN
 %token LPAREN RPAREN NEWLINE
 
+
+%token KEY_PRESSED
+%token <ival> KEY_CODE
+
+
 %token <ival> NUMBER BOOL
 %token <sval> IDENTIFIER STRING
 
 %token <sval> BODY
 
+%token <sval> BLOCK
+
+%token DRAW_CIRCLE DRAW_LINE DRAW_RECT DRAW_TRIANGLE
+
+
 %type <ival> expression condition
 %type program command function_definition print_statement assignment
 
+
+%start program
+
 %%
+
+
+key_check:
+    KEY_PRESSED NUMBER {
+        printf("Tuş basildi: %d\n", $2);
+    }
+;
+
+
+
+drawing_command:
+      DRAW_CIRCLE expression expression expression {
+          printf("Daire çizildi: (%d,%d) yariçap: %d\n", $2, $3, $4);
+      }
+    | DRAW_LINE expression expression expression expression {
+          printf("Çizgi: (%d,%d) → (%d,%d)\n", $2, $3, $4, $5);
+      }
+    | DRAW_RECT expression expression {
+          printf("Dikdörtgen: En:(%d), Boy:(%d)\n", $2, $3);
+      }
+    | DRAW_TRIANGLE expression expression {
+          printf("Üçgen: Yükseklik:(%d), Taban:(%d)\n", $2, $3);
+      }
+;
+
 
 program:
     program command
@@ -106,6 +143,8 @@ command:
     | input_statement
     | function_definition
     | function_call
+    | drawing_command
+    | key_check
 ;
 
 assignment:
@@ -115,34 +154,51 @@ assignment:
 ;
 
 expression:
-      expression SUM expression           { $$ = $1 + $3; }
-    | expression SUBSTRACTION expression  { $$ = $1 - $3; }
-    | expression MULTIPLICATION expression { $$ = $1 * $3; }
-    | expression DIVIDE expression        { $$ = $1 / $3; }
-    | NUMBER                              { $$ = $1; }
-    | BOOL                                { $$ = $1; }
-    | IDENTIFIER                          { $$ = getVariable($1); }
-    | LPAREN expression RPAREN            { $$ = $2; }
-    | expression EXPONENT expression { $$ = pow($1, $3); }
-    | expression MOD expression { $$ = $1 % $3; }
-    | expression ROOT expression { $$ = sqrt($3); }
+      expression SUM expression             { $$ = $1 + $3; }
+    | expression SUBSTRACTION expression    { $$ = $1 - $3; }
+    | expression MULTIPLICATION expression  { $$ = $1 * $3; }
+    | expression DIVIDE expression          { $$ = $1 / $3; }
+    | expression MOD expression             { $$ = $1 % $3; }
+    | expression EXPONENT expression        { $$ = pow($1, $3); }
+    | expression ROOT expression            { $$ = pow($3, 1.0 / $1); }
+    | SIN expression                        { $$ = sin($2); }
+    | COS expression                        { $$ = cos($2); }
+    | TAN expression                        { $$ = tan($2); }
+    | COT expression                        { $$ = 1.0 / tan($2); }
+    | NUMBER                                { $$ = $1; }
+    | BOOL                                  { $$ = $1; }
+    | IDENTIFIER                            { $$ = getVariable($1); }
+    | LPAREN expression RPAREN              { $$ = $2; }
+    | ABS expression { $$ = abs($2); }
 ;
+
 
 if_statement:
-    IF condition THEN BODY {
-        if ($2) executeBlock($4);
+    IF condition THEN BODY
+    {
+      if ($2) {
+        YY_BUFFER_STATE b = yy_scan_string($4);
+        yyparse();
+        yy_delete_buffer(b);
+        return 0;
+      }
     }
-  | IF condition THEN BODY ELSE BODY {
-        if ($2) executeBlock($4);
-        else executeBlock($6);
+  | IF condition THEN BODY ELSE BODY
+    {
+      if ($2) {
+        YY_BUFFER_STATE b1 = yy_scan_string($4);
+        yyparse();
+        yy_delete_buffer(b1);
+        return 0;
+      } else {
+        YY_BUFFER_STATE b2 = yy_scan_string($6);
+        yyparse();
+        yy_delete_buffer(b2);
+        return 0; 
+      }
     }
 ;
 
-loop_statement:
-    LOOP condition BODY {
-        while ($2) executeBlock($3);
-    }
-;
 
 condition:
       expression LESS expression          { $$ = $1 < $3; }
@@ -151,7 +207,28 @@ condition:
     | expression MORE_EQUAL expression    { $$ = $1 >= $3; }
     | expression EQUALS expression        { $$ = $1 == $3; }
     | expression DIFFERENT expression     { $$ = $1 != $3; }
+    | condition AND condition             { $$ = $1 && $3; }
+    | condition OR condition              { $$ = $1 || $3; }
+    | NOT condition                       { $$ = !$2; }
+    | KEY_PRESSED NUMBER                  { 
+        printf("Tuş kodunu gir (ör: 38): "); 
+        int c; 
+        scanf("%d", &c); 
+        $$ = (c == $2); 
+    }
 ;
+
+loop_statement:
+    LOOP condition BODY
+    {
+      while ($2) {
+        YY_BUFFER_STATE b = yy_scan_string($3);
+        yyparse();
+        yy_delete_buffer(b);
+      }
+    }
+;
+
 
 print_statement:
     PRINT expression {
@@ -162,12 +239,10 @@ print_statement:
     }
 ;
 
+
 input_statement:
-    INPUT IDENTIFIER {
-        int val;
-        printf(">> ");
-        scanf("%d", &val);
-        setVariable($2, val);
+    INPUT IDENTIFIER NUMBER {
+        setVariable($2, $3);
     }
 ;
 
@@ -184,17 +259,25 @@ function_definition:
     }
 ;
 
+
+
 function_call:
     IDENTIFIER LPAREN param_list RPAREN {
         int found = 0;
         for (int i = 0; i < funcCount; i++) {
             if (strcmp(funcs[i].name, $1) == 0) {
                 found = 1;
-                for (int j = 0; j < funcs[i].paramCount; j++)
+                // Parametreleri doğru atamak için:
+                for (int j = 0; j < funcs[i].paramCount; j++) {
                     setVariable(funcs[i].params[j], args[j]);
-                YY_BUFFER_STATE buf = yy_scan_string(funcs[i].body);
-                yyparse();
-                yy_delete_buffer(buf);
+                }
+                // Fonksiyon gövdesini string olarak parse et
+                {
+                    YY_BUFFER_STATE buf = yy_scan_string(funcs[i].body);
+                    yyparse();
+                    yy_delete_buffer(buf);
+                    return 0;
+                }
                 break;
             }
         }
@@ -204,6 +287,7 @@ function_call:
         argCount = 0;
     }
 ;
+
 
 param_def_list:
       IDENTIFIER  {
@@ -227,10 +311,14 @@ param_list:
       }
 ;
 
+
+
 %%
 
 int main() {
-    yyparse();
+    if (yyparse() == 0) {
+        printf("[Başarili] Kod gramer kurallarina uygundur.\n");
+    }
     return 0;
 }
 

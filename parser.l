@@ -75,6 +75,17 @@
 
 
 
+"draw_circle"  { return DRAW_CIRCLE; }
+"draw_line"  { return DRAW_LINE; }
+"draw_rectangle" { return DRAW_RECT; }
+"draw_triangle"  { return DRAW_TRIANGLE; }
+
+"key_pressed"   { return KEY_PRESSED; }
+"key_UP"    { yylval.ival = 1; return NUMBER; }
+"key_DOWN"     { yylval.ival = 2; return NUMBER; }
+"key_R"       { yylval.ival = 3; return NUMBER; }
+"key_L"       { yylval.ival = 4; return NUMBER; }
+
 
 
 [0-9]+            { yylval.ival = atoi(yytext); return NUMBER; }
